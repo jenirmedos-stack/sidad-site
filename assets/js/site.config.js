@@ -1,5 +1,5 @@
 window.SIDAD_CONFIG = {
   whatsapp: "",
   email: "",
-  formEndpoint: ""
+  formEndpoint: "https://formspree.io/f/mkjroler"
 };

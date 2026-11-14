@@ -457,6 +457,7 @@
   var copyButton = document.getElementById("copy-message");
   var closeDialogButton = document.getElementById("close-dialog");
   var copyStatus = document.getElementById("copy-status");
+  var isSubmitting = false;
   var mode = formEndpoint ? "endpoint" : whatsappDigits ? "whatsapp" : hasEmail ? "email" : "copy";
 
   var modeCopy = {
@@ -645,6 +646,11 @@
 
   form.addEventListener("submit", function (event) {
     event.preventDefault();
+
+    if (isSubmitting) {
+      return;
+    }
+
     setStatus("", null);
 
     if (honeypot && honeypot.value) {
@@ -680,31 +686,55 @@
       return;
     }
 
-    var payload = new FormData();
-    payload.append("name", nameInput.value.trim());
-    payload.append("email", emailInput.value.trim());
-    payload.append("company", companyInput.value.trim());
-    payload.append("message", messageInput.value.trim());
-    payload.append("consent", "true");
-    payload.append("_subject", "Contato pelo site da SIDAD");
+    var company = companyInput.value.trim();
+    var subject = "Contato pelo site da SIDAD";
+    if (company) {
+      subject += " — " + company;
+    }
 
+    var payload = {
+      name: nameInput.value.trim(),
+      email: emailInput.value.trim(),
+      company: company,
+      subject: subject,
+      message: messageInput.value.trim(),
+      consent: "true",
+      _subject: subject,
+      _gotcha: honeypot ? honeypot.value : ""
+    };
+
+    isSubmitting = true;
     submitButton.disabled = true;
     submitButton.setAttribute("aria-busy", "true");
-    setStatus("Enviando...", "is-info");
+    var originalLabel = submitButton.textContent;
+    submitButton.textContent = "Enviando...";
+    setStatus("Enviando solicitação...", "is-info");
 
     fetch(formEndpoint, {
       method: "POST",
-      headers: { Accept: "application/json" },
-      body: payload
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json"
+      },
+      body: JSON.stringify(payload)
     })
       .then(function (response) {
-        if (!response.ok) {
-          throw new Error("Falha no envio");
-        }
-        return response;
+        return response
+          .json()
+          .catch(function () {
+            return {};
+          })
+          .then(function (data) {
+            if (!response.ok || !data || data.ok !== true) {
+              throw new Error(
+                "Não foi possível enviar agora. Verifique os dados e tente novamente."
+              );
+            }
+            return data;
+          });
       })
       .then(function () {
-        setStatus("Mensagem enviada. A SIDAD entrará em contato.", null);
+        setStatus("Solicitação enviada. A SIDAD entrará em contato.", null);
         form.reset();
         clearError(nameInput, nameError);
         clearError(emailInput, emailError);
@@ -712,11 +742,16 @@
         clearError(consentInput, consentError);
       })
       .catch(function () {
-        setStatus("Não foi possível enviar agora. Tente novamente ou use um dos canais diretos.", "is-error");
+        setStatus(
+          "Não foi possível enviar agora. Tente novamente em instantes.",
+          "is-error"
+        );
       })
       .finally(function () {
+        isSubmitting = false;
         submitButton.disabled = false;
         submitButton.removeAttribute("aria-busy");
+        submitButton.textContent = originalLabel;
       });
   });
 
