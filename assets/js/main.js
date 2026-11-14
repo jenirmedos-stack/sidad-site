@@ -6,12 +6,27 @@
   var navGlass = document.querySelector("[data-glass]");
   var navToggle = document.querySelector(".nav-toggle");
   var mobileMenu = document.getElementById("mobile-menu");
-  var navLinks = Array.prototype.slice.call(document.querySelectorAll(".nav-link"));
-  var sections = ["servicos", "sobre", "como-funciona", "contato"]
-    .map(function (id) {
-      return document.getElementById(id);
-    })
-    .filter(Boolean);
+  var pageNavLinks = Array.prototype.slice.call(document.querySelectorAll(".nav-link, .mobile-nav-list a"));
+
+  function normalizePath(value) {
+    var result = String(value || "").split("#")[0];
+    if (result.length > 1 && result.slice(-1) === "/") result = result.slice(0, -1);
+    if (result.slice(-11) === "/index.html") result = result.slice(0, -11);
+    return result || "/";
+  }
+
+  var currentPath = normalizePath(window.location.pathname);
+  pageNavLinks.forEach(function (link) {
+    var href = link.getAttribute("href") || "";
+    if (href.charAt(0) !== "/") return;
+    var target = normalizePath(href);
+    var active = target === "/" ? currentPath === "/" : currentPath === target || currentPath.indexOf(target + "/") === 0;
+    if (active) {
+      link.setAttribute("aria-current", "page");
+    } else {
+      link.removeAttribute("aria-current");
+    }
+  });
   var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var desktopQuery = window.matchMedia("(min-width: 900px)");
   var finePointer = window.matchMedia("(pointer: fine)");
@@ -77,26 +92,7 @@
     updateParallax();
     if (processUpdate) processUpdate();
 
-    if (!sections.length || !navLinks.length) return;
 
-    var offset = 160;
-    var current = "";
-
-    sections.forEach(function (section) {
-      var rect = section.getBoundingClientRect();
-      if (rect.top <= offset && rect.bottom > offset) {
-        current = section.id;
-      }
-    });
-
-    navLinks.forEach(function (link) {
-      var hash = (link.getAttribute("href") || "").split("#")[1];
-      if (hash && hash === current) {
-        link.setAttribute("aria-current", "true");
-      } else {
-        link.removeAttribute("aria-current");
-      }
-    });
   }
 
   function onScroll() {
