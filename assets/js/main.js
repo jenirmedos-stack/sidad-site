@@ -1,4 +1,4 @@
-﻿(function () {
+(function () {
   "use strict";
 
   var config = window.SIDAD_CONFIG || {};
@@ -144,6 +144,44 @@
     hero.addEventListener("pointerleave", function () {
       heroMedia.style.setProperty("--hero-x", "0px");
       heroMedia.style.setProperty("--hero-y", "0px");
+    });
+  }
+
+  if (finePointer.matches && desktopQuery.matches && !reduceMotion) {
+    var cursorDot = document.createElement("div");
+    cursorDot.className = "cursor-dot";
+    cursorDot.setAttribute("aria-hidden", "true");
+    document.body.appendChild(cursorDot);
+
+    var interactiveSelector = "a, button, input, textarea, select, label, [role='button']";
+
+    function isInteractive(target) {
+      return !!(target && target.closest && target.closest(interactiveSelector));
+    }
+
+    document.addEventListener(
+      "pointermove",
+      function (event) {
+        if (event.pointerType && event.pointerType !== "mouse" && event.pointerType !== "pen") return;
+        cursorDot.style.setProperty("--cx", event.clientX + "px");
+        cursorDot.style.setProperty("--cy", event.clientY + "px");
+        cursorDot.classList.add("is-visible");
+      },
+      { passive: true }
+    );
+
+    document.addEventListener("pointerover", function (event) {
+      cursorDot.classList.toggle("is-active", isInteractive(event.target));
+    });
+
+    document.addEventListener("pointerout", function (event) {
+      if (!isInteractive(event.relatedTarget)) {
+        cursorDot.classList.remove("is-active");
+      }
+    });
+
+    document.addEventListener("mouseleave", function () {
+      cursorDot.classList.remove("is-visible", "is-active");
     });
   }
 
