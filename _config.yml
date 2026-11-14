@@ -1,0 +1,7 @@
+title: SIDAD
+description: Automação e prestação de serviços para estabelecimentos comerciais.
+url: https://sidad.com.br
+lang: pt-BR
+exclude:
+  - _referencias
+  - README.md
