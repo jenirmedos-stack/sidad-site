@@ -1,0 +1,17 @@
+SIDAD — Tipografia
+
+Cabinet Grotesk e Satoshi
+Distribuídas pela Fontshare (Indian Type Foundry).
+Licença: ITF Free Font License — uso gratuito para projetos pessoais e comerciais.
+https://www.fontshare.com/licenses/itf-ffl
+
+Arquivos utilizados:
+- assets/fonts/cabinet-grotesk-500.woff2
+- assets/fonts/cabinet-grotesk-700.woff2
+- assets/fonts/cabinet-grotesk-800.woff2
+- assets/fonts/satoshi-400.woff2
+- assets/fonts/satoshi-500.woff2
+- assets/fonts/satoshi-700.woff2
+
+Os arquivos de licença de Archivo, IBM Plex Sans e Inter permanecem nesta pasta
+apenas como histórico dos assets anteriores.

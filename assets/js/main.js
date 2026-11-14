@@ -1,8 +1,9 @@
-(function () {
+﻿(function () {
   "use strict";
 
   var config = window.SIDAD_CONFIG || {};
   var header = document.querySelector(".site-header");
+  var navGlass = document.querySelector("[data-glass]");
   var navToggle = document.querySelector(".nav-toggle");
   var mobileMenu = document.getElementById("mobile-menu");
   var navLinks = Array.prototype.slice.call(document.querySelectorAll(".nav-link"));
@@ -11,6 +12,12 @@
       return document.getElementById(id);
     })
     .filter(Boolean);
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var desktopQuery = window.matchMedia("(min-width: 900px)");
+  var finePointer = window.matchMedia("(pointer: fine)");
+  var processUpdate = null;
+  var parallaxItems = Array.prototype.slice.call(document.querySelectorAll("[data-parallax]"));
+  var ticking = false;
 
   function setInert(element, value) {
     if (!element) return;
@@ -35,16 +42,44 @@
     yearElement.textContent = String(new Date().getFullYear());
   }
 
-  var ticking = false;
+  var progressBar = document.getElementById("scroll-progress-bar");
+
+  function updateProgress() {
+    if (!progressBar) return;
+    var max = document.documentElement.scrollHeight - window.innerHeight;
+    var ratio = max > 0 ? Math.min(1, Math.max(0, window.scrollY / max)) : 0;
+    progressBar.style.transform = "scaleX(" + ratio + ")";
+  }
+
+  function updateParallax() {
+    if (reduceMotion || !desktopQuery.matches) return;
+
+    var viewport = window.innerHeight;
+
+    parallaxItems.forEach(function (element) {
+      var rect = element.getBoundingClientRect();
+      if (rect.bottom < -180 || rect.top > viewport + 180) return;
+
+      var speed = parseFloat(element.getAttribute("data-speed")) || 0.28;
+      var offset = (rect.top + rect.height / 2 - viewport / 2) * speed * -0.06;
+      offset = Math.max(-26, Math.min(26, offset));
+      element.style.setProperty("--parallax-x", "0px");
+      element.style.setProperty("--parallax-y", offset.toFixed(2) + "px");
+    });
+  }
 
   function updateOnScroll() {
     if (header) {
-      header.classList.toggle("is-scrolled", window.scrollY > 8);
+      header.classList.toggle("is-scrolled", window.scrollY > 12);
     }
+
+    updateProgress();
+    updateParallax();
+    if (processUpdate) processUpdate();
 
     if (!sections.length || !navLinks.length) return;
 
-    var offset = (header ? header.offsetHeight : 0) + 120;
+    var offset = 160;
     var current = "";
 
     sections.forEach(function (section) {
@@ -76,7 +111,41 @@
 
   window.addEventListener("scroll", onScroll, { passive: true });
   window.addEventListener("resize", onScroll);
-  updateOnScroll();
+
+  if (header) {
+    header.classList.toggle("is-scrolled", window.scrollY > 12);
+  }
+
+  if (navGlass && finePointer.matches && !reduceMotion) {
+    navGlass.addEventListener("pointermove", function (event) {
+      var rect = navGlass.getBoundingClientRect();
+      navGlass.style.setProperty("--mx", ((event.clientX - rect.left) / rect.width) * 100 + "%");
+      navGlass.style.setProperty("--my", ((event.clientY - rect.top) / rect.height) * 100 + "%");
+    });
+
+    navGlass.addEventListener("pointerleave", function () {
+      navGlass.style.setProperty("--mx", "30%");
+      navGlass.style.setProperty("--my", "20%");
+    });
+  }
+
+  var hero = document.querySelector(".hero");
+  var heroMedia = document.querySelector(".hero-media");
+
+  if (hero && heroMedia && finePointer.matches && !reduceMotion) {
+    hero.addEventListener("pointermove", function (event) {
+      var rect = hero.getBoundingClientRect();
+      var x = ((event.clientX - rect.left) / rect.width - 0.5) * 18;
+      var y = ((event.clientY - rect.top) / rect.height - 0.5) * 12;
+      heroMedia.style.setProperty("--hero-x", x.toFixed(2) + "px");
+      heroMedia.style.setProperty("--hero-y", y.toFixed(2) + "px");
+    });
+
+    hero.addEventListener("pointerleave", function () {
+      heroMedia.style.setProperty("--hero-x", "0px");
+      heroMedia.style.setProperty("--hero-y", "0px");
+    });
+  }
 
   if (navToggle && mobileMenu) {
     var menuOpen = false;
@@ -109,7 +178,7 @@
       var focusable = getFocusable(mobileMenu);
       window.setTimeout(function () {
         if (focusable.length) focusable[0].focus();
-      }, 60);
+      }, 80);
     }
 
     function onMenuKeydown(event) {
@@ -150,7 +219,6 @@
       }
     });
 
-    var desktopQuery = window.matchMedia("(min-width: 901px)");
     var onDesktopChange = function (event) {
       if (event.matches) {
         closeMenu(false);
@@ -164,32 +232,63 @@
     }
   }
 
-  var reveals = Array.prototype.slice.call(document.querySelectorAll(".reveal"));
+  var reveals = Array.prototype.slice.call(document.querySelectorAll(".reveal, .reveal-img"));
 
   if (reveals.length) {
-    var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
     if (reduceMotion || !("IntersectionObserver" in window)) {
       reveals.forEach(function (element) {
         element.classList.add("is-visible");
       });
     } else {
-      var observer = new IntersectionObserver(
+      var revealObserver = new IntersectionObserver(
         function (entries) {
           entries.forEach(function (entry) {
             if (entry.isIntersecting) {
               entry.target.classList.add("is-visible");
-              observer.unobserve(entry.target);
+              revealObserver.unobserve(entry.target);
             }
           });
         },
-        { threshold: 0.12, rootMargin: "0px 0px -8% 0px" }
+        { threshold: 0.1, rootMargin: "0px 0px -7% 0px" }
       );
 
       reveals.forEach(function (element) {
-        observer.observe(element);
+        revealObserver.observe(element);
       });
     }
+  }
+
+  var process = document.querySelector("[data-process]");
+
+  if (process) {
+    var steps = Array.prototype.slice.call(process.querySelectorAll("[data-step]"));
+    var progressFill = process.querySelector(".process-line span");
+
+    processUpdate = function () {
+      if (!steps.length) return;
+
+      var focusY = window.innerHeight * 0.5;
+      var bestIndex = 0;
+      var bestDistance = Infinity;
+
+      steps.forEach(function (step, index) {
+        var rect = step.getBoundingClientRect();
+        var center = rect.top + rect.height / 2;
+        var distance = Math.abs(center - focusY);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          bestIndex = index;
+        }
+      });
+
+      steps.forEach(function (step, index) {
+        step.classList.toggle("is-active", index === bestIndex);
+      });
+
+      if (progressFill) {
+        progressFill.style.height = String(((bestIndex + 1) / steps.length) * 100) + "%";
+      }
+    };
   }
 
   function isEmail(value) {
