@@ -3521,3 +3521,12 @@ strong {
     font-size: clamp(2.5rem, 9vw, 3.6rem);
   }
 }
+.detail-intro--sorriso .detail-intro-media img {
+  object-position: 68% 28%;
+}
+
+@media (max-width: 900px) {
+  .detail-intro--sorriso .detail-intro-media img {
+    object-position: center 22%;
+  }
+}
